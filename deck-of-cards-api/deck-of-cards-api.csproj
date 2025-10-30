@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>test_api</RootNamespace>
+    <InternalsVisibleTo>deck_of_cards_test</InternalsVisibleTo>
   </PropertyGroup>
 
   <ItemGroup>
