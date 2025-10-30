@@ -1,0 +1,140 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using DeckOfCardsWeb.Models
+@using DeckOfCardsWeb.Services
+@inject CardService CardService
+
+<PageTitle>Home</PageTitle>
+
+<h1>Deck of Cards</h1>
+
+<div class="mt-4">
+    <button class="btn btn-primary" @onclick="ShuffleCards" disabled="@isLoading">
+        @if (isLoading)
+        {
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            <span>Loading...</span>
+        }
+        else
+        {
+            <span>Shuffle Cards</span>
+        }
+    </button>
+    
+    <button class="btn btn-secondary ms-2" @onclick="TestClick">
+        Test Click
+    </button>
+</div>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger mt-3">
+        @errorMessage
+    </div>
+}
+
+@if (drawnCards != null && drawnCards.Length > 0)
+{
+    <div class="mt-4">
+        <h3>Your Cards (@drawnCards.Length cards drawn, @remainingCards remaining)</h3>
+        <div class="d-flex flex-wrap gap-3 mt-3">
+            @foreach (var card in drawnCards)
+            {
+                <div class="card" style="width: 150px;">
+                    <div class="card-header p-1 text-center">
+                        <button class="btn btn-success btn-sm w-100" @onclick="() => HandleHigher(card)">
+                            Higher
+                        </button>
+                    </div>
+                    <img src="@card.Image" class="card-img" alt="@card.Value of @card.Suit" />
+                    <div class="card-body p-2 text-center">
+                        <small class="card-text">@card.Value of @card.Suit</small>
+                    </div>
+                    <div class="card-footer p-1 text-center">
+                        <button class="btn btn-danger btn-sm w-100" @onclick="() => HandleLower(card)">
+                            Lower
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = false;
+    private string? errorMessage = null;
+    private Card[]? drawnCards = null;
+    private int remainingCards = 0;
+
+    private void TestClick()
+    {
+        Console.WriteLine("Test button clicked!");
+        errorMessage = "Test button clicked - buttons are working!";
+        StateHasChanged();
+    }
+
+    private void HandleHigher(Card card)
+    {
+        Console.WriteLine($"Higher button clicked for {card.Value} of {card.Suit}");
+        errorMessage = $"Higher selected for {card.Value} of {card.Suit}";
+        StateHasChanged();
+    }
+
+    private void HandleLower(Card card)
+    {
+        Console.WriteLine($"Lower button clicked for {card.Value} of {card.Suit}");
+        errorMessage = $"Lower selected for {card.Value} of {card.Suit}";
+        StateHasChanged();
+    }
+
+    private async Task ShuffleCards()
+    {
+        isLoading = true;
+        errorMessage = null;
+        drawnCards = null;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine("Starting shuffle cards...");
+            
+            // Step 1: Create new deck
+            var deckResponse = await CardService.CreateNewDeckAsync();
+            Console.WriteLine($"Deck response: {deckResponse?.Success}, DeckId: {deckResponse?.DeckId}");
+            
+            if (deckResponse == null || !deckResponse.Success)
+            {
+                errorMessage = "Failed to create new deck";
+                Console.WriteLine("Failed to create deck");
+                return;
+            }
+
+            // Step 2: Draw 5 cards from the deck
+            var drawResponse = await CardService.DrawCardsAsync(deckResponse.DeckId, 5);
+            Console.WriteLine($"Draw response: {drawResponse?.Success}, Cards: {drawResponse?.Cards?.Length}");
+            
+            if (drawResponse == null || !drawResponse.Success)
+            {
+                errorMessage = "Failed to draw cards from deck";
+                Console.WriteLine("Failed to draw cards");
+                return;
+            }
+
+            // Update the UI with the drawn cards
+            drawnCards = drawResponse.Cards;
+            remainingCards = drawResponse.Remaining;
+            Console.WriteLine($"Successfully drew {drawnCards.Length} cards");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Exception: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}
