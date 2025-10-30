@@ -11,7 +11,7 @@ En Blazor Server-applikation som innehåller:
 - **Frontend**: Interaktivt användargränssnitt för kortspelet
 - **Backend**: Tjänster för att hantera kortlogik och API-anrop
 
-### test-api
+### deck-of-cards-api
 En ASP.NET Core Web API som tillhandahåller:
 - **REST API**: Endpoints för korthantering
 - **Kortlogik**: Tjänster för att skapa kortlekar och dra kort
@@ -64,7 +64,7 @@ En ASP.NET Core Web API som tillhandahåller:
 
 3. **Starta API:et** (i en terminal)
    ```bash
-   cd test-api
+   cd deck-of-cards-api
    dotnet run
    ```
 
@@ -85,7 +85,7 @@ Projektet använder:
 - **Bootstrap**: För responsiv UI-design
 
 ## API Endpoints
-### test-api
+### deck-of-cards-api
 - `GET /api/deck/new` - Skapar en ny kortlek
 - `GET /api/deck/{deckId}/draw/{count}` - Drar kort från kortlek
 
