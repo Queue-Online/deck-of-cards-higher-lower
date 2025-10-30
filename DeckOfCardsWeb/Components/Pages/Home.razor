@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using DeckOfCardsWeb.Models
 @using DeckOfCardsWeb.Services
+@using System.Linq
 @inject CardService CardService
 
 <PageTitle>Home</PageTitle>
@@ -17,7 +18,7 @@
         }
         else
         {
-            <span>Shuffle Cards</span>
+            <span>Draw Card</span>
         }
     </button>
     
@@ -36,28 +37,45 @@
 @if (drawnCards != null && drawnCards.Length > 0)
 {
     <div class="mt-4">
-        <h3>Your Cards (@drawnCards.Length cards drawn, @remainingCards remaining)</h3>
+        <h3>Your Cards (@drawnCards.Length cards drawn, @remainingCards remaining) - Score: @score</h3>
         <div class="d-flex flex-wrap gap-3 mt-3">
-            @foreach (var card in drawnCards)
+            @for (int i = 0; i < drawnCards.Length; i++)
             {
+                var card = drawnCards[i];
+                var isLastCard = i == drawnCards.Length - 1;
+                
                 <div class="card" style="width: 150px;">
-                    <div class="card-header p-1 text-center">
-                        <button class="btn btn-success btn-sm w-100" @onclick="() => HandleHigher(card)">
-                            Higher
-                        </button>
-                    </div>
+                    @if (!gameOver && isLastCard)
+                    {
+                        <div class="card-header p-1 text-center">
+                            <button class="btn btn-success btn-sm w-100" @onclick="() => HandleHigher(card)" disabled="@isLoading">
+                                Higher
+                            </button>
+                        </div>
+                    }
                     <img src="@card.Image" class="card-img" alt="@card.Value of @card.Suit" />
                     <div class="card-body p-2 text-center">
                         <small class="card-text">@card.Value of @card.Suit</small>
                     </div>
-                    <div class="card-footer p-1 text-center">
-                        <button class="btn btn-danger btn-sm w-100" @onclick="() => HandleLower(card)">
-                            Lower
-                        </button>
-                    </div>
+                    @if (!gameOver && isLastCard)
+                    {
+                        <div class="card-footer p-1 text-center">
+                            <button class="btn btn-danger btn-sm w-100" @onclick="() => HandleLower(card)" disabled="@isLoading">
+                                Lower
+                            </button>
+                        </div>
+                    }
                 </div>
             }
         </div>
+        @if (gameOver)
+        {
+            <div class="mt-3">
+                <button class="btn btn-primary" @onclick="ShuffleCards">
+                    Start New Game
+                </button>
+            </div>
+        }
     </div>
 }
 
@@ -66,6 +84,9 @@
     private string? errorMessage = null;
     private Card[]? drawnCards = null;
     private int remainingCards = 0;
+    private string? currentDeckId = null;
+    private bool gameOver = false;
+    private int score = 0;
 
     private void TestClick()
     {
@@ -74,18 +95,106 @@
         StateHasChanged();
     }
 
-    private void HandleHigher(Card card)
+    private async Task HandleHigher(Card card)
     {
-        Console.WriteLine($"Higher button clicked for {card.Value} of {card.Suit}");
-        errorMessage = $"Higher selected for {card.Value} of {card.Suit}";
-        StateHasChanged();
+        await PlayGame(card, true);
     }
 
-    private void HandleLower(Card card)
+    private async Task HandleLower(Card card)
     {
-        Console.WriteLine($"Lower button clicked for {card.Value} of {card.Suit}");
-        errorMessage = $"Lower selected for {card.Value} of {card.Suit}";
+        await PlayGame(card, false);
+    }
+
+    private async Task PlayGame(Card currentCard, bool isHigher)
+    {
+        if (gameOver || currentDeckId == null)
+        {
+            errorMessage = "Game is over or no deck available. Please draw a new card to start.";
+            return;
+        }
+
+        isLoading = true;
         StateHasChanged();
+
+        try
+        {
+            // Draw the next card
+            var drawResponse = await CardService.DrawCardsAsync(currentDeckId, 1);
+            
+            if (drawResponse == null || !drawResponse.Success || drawResponse.Cards?.Length == 0)
+            {
+                errorMessage = "Failed to draw next card";
+                return;
+            }
+
+            var nextCard = drawResponse.Cards![0];
+            remainingCards = drawResponse.Remaining;
+
+            // Convert card values to numbers for comparison
+            int currentValue = GetCardValue(currentCard.Value);
+            int nextValue = GetCardValue(nextCard.Value);
+
+            bool playerWon;
+            if (isHigher)
+            {
+                playerWon = nextValue >= currentValue;
+                errorMessage = $"You guessed HIGHER: {currentCard.Value} → {nextCard.Value}. ";
+            }
+            else
+            {
+                playerWon = nextValue <= currentValue;
+                errorMessage = $"You guessed LOWER: {currentCard.Value} → {nextCard.Value}. ";
+            }
+
+            if (playerWon)
+            {
+                score++;
+                errorMessage += $"CORRECT! Score: {score}";
+                // Keep all previous cards and add the new card
+                var cardsList = drawnCards?.ToList() ?? new List<Card>();
+                cardsList.Add(nextCard);
+                drawnCards = cardsList.ToArray();
+            }
+            else
+            {
+                errorMessage += $"WRONG! Game Over. Final Score: {score}";
+                gameOver = true;
+                // Keep all cards and add the final card
+                var cardsList = drawnCards?.ToList() ?? new List<Card>();
+                cardsList.Add(nextCard);
+                drawnCards = cardsList.ToArray();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private int GetCardValue(string cardValue)
+    {
+        return cardValue switch
+        {
+            "ACE" => 1,
+            "2" => 2,
+            "3" => 3,
+            "4" => 4,
+            "5" => 5,
+            "6" => 6,
+            "7" => 7,
+            "8" => 8,
+            "9" => 9,
+            "10" => 10,
+            "JACK" => 11,
+            "QUEEN" => 12,
+            "KING" => 13,
+            _ => 0
+        };
     }
 
     private async Task ShuffleCards()
@@ -93,11 +202,13 @@
         isLoading = true;
         errorMessage = null;
         drawnCards = null;
+        gameOver = false;
+        score = 0;
         StateHasChanged();
 
         try
         {
-            Console.WriteLine("Starting shuffle cards...");
+            Console.WriteLine("Starting draw card...");
             
             // Step 1: Create new deck
             var deckResponse = await CardService.CreateNewDeckAsync();
@@ -110,8 +221,10 @@
                 return;
             }
 
-            // Step 2: Draw 5 cards from the deck
-            var drawResponse = await CardService.DrawCardsAsync(deckResponse.DeckId, 5);
+            currentDeckId = deckResponse.DeckId;
+
+            // Step 2: Draw 1 card from the deck
+            var drawResponse = await CardService.DrawCardsAsync(deckResponse.DeckId, 1);
             Console.WriteLine($"Draw response: {drawResponse?.Success}, Cards: {drawResponse?.Cards?.Length}");
             
             if (drawResponse == null || !drawResponse.Success)
@@ -124,6 +237,7 @@
             // Update the UI with the drawn cards
             drawnCards = drawResponse.Cards;
             remainingCards = drawResponse.Remaining;
+            errorMessage = "Game started! Guess if the next card will be higher or lower.";
             Console.WriteLine($"Successfully drew {drawnCards.Length} cards");
         }
         catch (Exception ex)
