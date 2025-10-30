@@ -1,0 +1,34 @@
+name: Build Backend API
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'deck-of-cards-api/**'
+      - '.github/workflows/build-backend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'deck-of-cards-api/**'
+      - '.github/workflows/build-backend.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore deck-of-cards-api/deck-of-cards-api.csproj
+      
+    - name: Build
+      run: dotnet build deck-of-cards-api/deck-of-cards-api.csproj --no-restore --configuration Release
+      
+    - name: Test
+      run: dotnet test deck-of-cards-api/deck-of-cards-api.csproj --no-build --configuration Release --verbosity normal
