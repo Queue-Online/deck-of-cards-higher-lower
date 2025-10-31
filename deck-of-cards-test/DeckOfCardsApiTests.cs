@@ -186,19 +186,20 @@ public class MockDeckApiMessageHandler : HttpMessageHandler
             var deckId = ExtractDeckId(uri, "draw");
             var count = ExtractCount(uri);
 
-            if (!_decks.ContainsKey(deckId) || !_deckCards.ContainsKey(deckId))
+            if (!_decks.TryGetValue(deckId, out var deck) || !_deckCards.TryGetValue(deckId, out var deckCards))
             {
                 return Task.FromResult(CreateResponse(HttpStatusCode.NotFound, "{\"success\":false}"));
             }
 
-            var cards = _deckCards[deckId].Take(count).ToArray();
-            _deckCards[deckId] = _deckCards[deckId].Skip(count).ToList();
-            _decks[deckId] = _decks[deckId] with { Remaining = _deckCards[deckId].Count };
+            var cards = deckCards.Take(count).ToArray();
+            deckCards = deckCards.Skip(count).ToList();
+            _deckCards[deckId] = deckCards;
+            _decks[deckId] = deck with { Remaining = deckCards.Count };
 
             var drawResponse = new DrawCardsApiResponse(
                 Success: true,
                 Deck_Id: deckId,
-                Remaining: _deckCards[deckId].Count,
+                Remaining: deckCards.Count,
                 Cards: cards
             );
 
@@ -211,12 +212,12 @@ public class MockDeckApiMessageHandler : HttpMessageHandler
         {
             var deckId = ExtractDeckId(uri, "shuffle");
 
-            if (!_decks.ContainsKey(deckId))
+            if (!_decks.TryGetValue(deckId, out var deck))
             {
                 return Task.FromResult(CreateResponse(HttpStatusCode.NotFound, "{\"success\":false}"));
             }
 
-            var deck = _decks[deckId] with { Shuffled = true };
+            deck = deck with { Shuffled = true };
             _decks[deckId] = deck;
 
             var shuffleJson = JsonSerializer.Serialize(deck, jsonOptions);
