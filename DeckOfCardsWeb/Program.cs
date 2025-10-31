@@ -11,6 +11,9 @@ builder.Services.AddRazorComponents()
 // Add HttpClient and CardService
 builder.Services.AddHttpClient<CardService>();
 
+// Add Feature Toggle Service
+builder.Services.AddSingleton<FeatureToggleService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -1,11 +1,19 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @using DeckOfCardsWeb.Models
 @using DeckOfCardsWeb.Services
 @using System.Linq
 @inject CardService CardService
+@inject FeatureToggleService FeatureToggleService
 
 <PageTitle>Home</PageTitle>
+
+@if (FeatureToggleService.IsWelcomeGreetingEnabled())
+{
+    <div class="alert alert-info mb-4">
+        <h3>Welcome Tobias to Feature toggling IF</h3>
+    </div>
+}
 
 <h1>Deck of Cards</h1>
 
@@ -22,7 +30,9 @@
         }
     </button>
     
-
+    <button class="btn btn-secondary ms-2" @onclick="TestClick">
+        Test Click
+    </button>
 </div>
 
 @if (errorMessage != null)
