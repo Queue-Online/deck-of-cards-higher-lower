@@ -19,21 +19,6 @@ Varje IDE användes för olika delar av projektet baserat på specifika behov - 
 
 **ChatGPT** har använts mycket för prompting-hjälp till Cursor och andra verktyg, samt för att förklara komplex kod och generera prompts för AI-verktygen.
 
-#### **Cursor** - AI-driven kodredigerare
-[Cursor](https://cursor.sh/) är en avancerad kodredigerare byggd på Visual Studio Code men med kraftfull AI-integration. Den användes för:
-
-- **Kodgenerering**: Automatisk generering av boilerplate-kod för Blazor-komponenter, API-endpoints och tjänster
-- **Kodkomplettering**: Intelligent förslag på kod medan du skriver
-- **Refaktorisering**: Förslag på förbättringar och optimeringar av befintlig kod
-- **Felsökning**: Hjälp med att identifiera och lösa problem i koden
-- **Dokumentation**: Generering av README-filer och kommentarer
-
-#### **GitHub Copilot** - AI-pair programmering
-- **Automatisk kodkomplettering**: Förslag baserat på din kod och kommentarer
-- **Funktion-generering**: Skapar hela funktioner baserat på funktionsnamn och kommentarer
-- **Test-generering**: Automatisk generering av enhetstester baserat på din kod
-- **Kodkonvertering**: Hjälper med att konvertera mellan olika kodmönster
-
 #### **Context7 MCP** - Dokumentations- och best practice-assistent
 [Context7 MCP](https://context7.com/) är ett särskilt kraftfullt verktyg som användes extensivt i detta projekt för att säkerställa att koden följer industristandarder:
 
