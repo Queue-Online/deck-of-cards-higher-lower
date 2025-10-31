@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace DeckOfCardsWeb.Services;
 
@@ -6,10 +7,14 @@ public class StatusService
 {
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _baseUrl;
+    private readonly ILogger<StatusService> _logger;
 
-    public StatusService(HttpClient httpClient)
+    public StatusService(HttpClient httpClient, IConfiguration configuration, ILogger<StatusService> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
+        _baseUrl = configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5040";
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -20,17 +25,32 @@ public class StatusService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"http://localhost:5040/status/logs?limit={limit}");
+            // Validate limit to prevent excessive memory usage
+            if (limit <= 0 || limit > 1000)
+            {
+                _logger.LogWarning("Invalid limit parameter: {Limit}. Using default of 100.", limit);
+                limit = 100;
+            }
+
+            var response = await _httpClient.GetAsync($"{_baseUrl}/status/logs?limit={limit}");
             
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<LogsResponse>(json, _jsonOptions);
             }
+            else
+            {
+                _logger.LogWarning("Failed to get logs. Status: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error getting logs");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error getting logs: {ex.Message}");
+            _logger.LogError(ex, "Error getting logs");
         }
         
         return null;
@@ -40,17 +60,25 @@ public class StatusService
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://localhost:5040/status/health");
+            var response = await _httpClient.GetAsync($"{_baseUrl}/status/health");
             
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<HealthStatusResponse>(json, _jsonOptions);
             }
+            else
+            {
+                _logger.LogWarning("Failed to get health status. Status: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error getting health status");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error getting health status: {ex.Message}");
+            _logger.LogError(ex, "Error getting health status");
         }
         
         return null;

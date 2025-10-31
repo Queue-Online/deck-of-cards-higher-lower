@@ -156,11 +156,28 @@ public static class DeckOfCardsEndpoints
         return Results.Ok(deck);
     }
 
-    private static async Task<IResult> GetLogs(IWebHostEnvironment env, int limit = 100)
+    private static async Task<IResult> GetLogs(IWebHostEnvironment env, ILogger<Program> logger, int limit = 100)
     {
         try
         {
+            // Validate limit to prevent excessive memory usage or DoS attacks
+            if (limit <= 0 || limit > 1000)
+            {
+                return Results.BadRequest(new { error = "Limit must be between 1 and 1000" });
+            }
+
             var logsDirectory = Path.Combine(env.ContentRootPath, "logs");
+            
+            // Security: Ensure we're reading from the logs directory, prevent directory traversal
+            var logsDirectoryFullPath = Path.GetFullPath(logsDirectory);
+            var contentRootFullPath = Path.GetFullPath(env.ContentRootPath);
+            
+            if (!logsDirectoryFullPath.StartsWith(contentRootFullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Invalid logs directory path detected: {LogsPath}", logsDirectoryFullPath);
+                return Results.Problem("Invalid logs directory path");
+            }
+
             if (!Directory.Exists(logsDirectory))
             {
                 return Results.Ok(new { logs = Array.Empty<string>(), message = "Logs directory not found" });
@@ -177,6 +194,15 @@ public static class DeckOfCardsEndpoints
             }
 
             var latestLogFile = logFiles[0];
+            
+            // Security: Validate file is within logs directory
+            var latestLogFileFullPath = Path.GetFullPath(latestLogFile);
+            if (!latestLogFileFullPath.StartsWith(logsDirectoryFullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Attempted to access file outside logs directory: {FilePath}", latestLogFileFullPath);
+                return Results.Problem("Invalid log file path");
+            }
+
             var logLines = await File.ReadAllLinesAsync(latestLogFile);
             var recentLogs = logLines
                 .TakeLast(limit)
@@ -184,13 +210,24 @@ public static class DeckOfCardsEndpoints
 
             return Results.Ok(new { logs = recentLogs, file = Path.GetFileName(latestLogFile) });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogError(ex, "Unauthorized access to logs directory");
+            return Results.Problem("Access denied to logs directory");
+        }
+        catch (IOException ex)
+        {
+            logger.LogError(ex, "IO error reading log file");
+            return Results.Problem("Failed to read log file");
+        }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Unexpected error reading logs");
             return Results.Problem($"Failed to read logs: {ex.Message}");
         }
     }
 
-    private static async Task<IResult> GetHealthStatus(HealthCheckService healthCheckService)
+    private static async Task<IResult> GetHealthStatus(HealthCheckService healthCheckService, ILogger<Program> logger)
     {
         try
         {
@@ -211,11 +248,21 @@ public static class DeckOfCardsEndpoints
                 })
             };
 
-            return Results.Ok(status);
+            // Return appropriate status code based on health status
+            return healthReport.Status switch
+            {
+                HealthStatus.Healthy => Results.Ok(status),
+                HealthStatus.Degraded => Results.Ok(status), // 200 OK but status indicates degraded
+                HealthStatus.Unhealthy => Results.StatusCode(503), // Service Unavailable
+                _ => Results.Ok(status)
+            };
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Failed to get health status: {ex.Message}");
+            logger.LogError(ex, "Error getting health status");
+            return Results.Problem(
+                detail: "Failed to get health status",
+                statusCode: 500);
         }
     }
 }
