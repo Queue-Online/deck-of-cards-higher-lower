@@ -209,6 +209,7 @@ public class TestHttpMessageHandler : HttpMessageHandler
             {
                 Content = new StringContent(response.content, Encoding.UTF8, "application/json")
             };
+            // HttpResponseMessage will be disposed by HttpClient when the response is consumed
             return Task.FromResult(httpResponse);
         }
 
@@ -216,6 +217,7 @@ public class TestHttpMessageHandler : HttpMessageHandler
         {
             Content = new StringContent("Not Found", Encoding.UTF8, "text/plain")
         };
+        // HttpResponseMessage will be disposed by HttpClient when the response is consumed
         return Task.FromResult(notFoundResponse);
     }
 }
