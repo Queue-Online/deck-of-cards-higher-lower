@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -149,7 +150,7 @@ public class MockDeckApiMessageHandler : HttpMessageHandler
 {
     private static readonly Dictionary<string, DeckApiResponse> _decks = new();
     private static readonly Dictionary<string, List<CardApiResponse>> _deckCards = new();
-    private static int _deckCounter = 1;
+    private static int _deckCounter = 0;
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -163,7 +164,7 @@ public class MockDeckApiMessageHandler : HttpMessageHandler
         if (uri.Contains("deck/new/shuffle"))
         {
             var deckCount = ExtractDeckCount(uri);
-            var deckId = $"mock-deck-{_deckCounter++}";
+            var deckId = $"mock-deck-{Interlocked.Increment(ref _deckCounter)}";
             var remaining = 52 * deckCount;
 
             var deck = new DeckApiResponse(
