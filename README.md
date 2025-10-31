@@ -1,5 +1,73 @@
 # Deck of Cards - Högre eller Lägre Spel
 
+## 🤖 AI Stöd för detta projektet
+
+Detta projekt har utvecklats med omfattande AI-assistans. Som en del av den moderna utvecklingsprocessen har flera AI-verktyg använts för att snabba upp utvecklingen, säkerställa bästa praxis och förbättra kodkvaliteten. Här beskriver vi vilka verktyg som användes och hur de hjälpte till.
+
+### 💻 Utvecklingsmiljöer (IDE:er)
+
+För detta projekt har flera olika utvecklingsmiljöer använts, där varje verktyg har sina styrkor:
+
+- **[Cursor](https://cursor.sh/)** - Primär IDE för AI-assisterad utveckling med inbyggd AI-chat och kodgenerering
+- **[Rider](https://www.jetbrains.com/rider/)** (JetBrains) - Professionell .NET IDE med avancerade refaktoreringsverktyg och testverktyg
+- **[Visual Studio 2026 Preview](https://visualstudio.microsoft.com/)** - Microsofts flaggskepps-IDE med omfattande .NET-stöd och debugging
+- **[Visual Studio Code](https://code.visualstudio.com/)** - Lättviktig editor med omfattande extension-ekosystem
+
+Varje IDE användes för olika delar av projektet baserat på specifika behov - Cursor för AI-assisterad kodgenerering, Rider för testning och refaktorisering, Visual Studio för debugging, och VS Code för snabba ändringar.
+
+### 🤖 AI-verktyg som användes
+
+**ChatGPT** har använts mycket för prompting-hjälp till Cursor och andra verktyg, samt för att förklara komplex kod och generera prompts för AI-verktygen.
+
+#### **Cursor** - AI-driven kodredigerare
+[Cursor](https://cursor.sh/) är en avancerad kodredigerare byggd på Visual Studio Code men med kraftfull AI-integration. Den användes för:
+
+- **Kodgenerering**: Automatisk generering av boilerplate-kod för Blazor-komponenter, API-endpoints och tjänster
+- **Kodkomplettering**: Intelligent förslag på kod medan du skriver
+- **Refaktorisering**: Förslag på förbättringar och optimeringar av befintlig kod
+- **Felsökning**: Hjälp med att identifiera och lösa problem i koden
+- **Dokumentation**: Generering av README-filer och kommentarer
+
+#### **GitHub Copilot** - AI-pair programmering
+- **Automatisk kodkomplettering**: Förslag baserat på din kod och kommentarer
+- **Funktion-generering**: Skapar hela funktioner baserat på funktionsnamn och kommentarer
+- **Test-generering**: Automatisk generering av enhetstester baserat på din kod
+- **Kodkonvertering**: Hjälper med att konvertera mellan olika kodmönster
+
+#### **Context7 MCP** - Dokumentations- och best practice-assistent
+[Context7 MCP](https://context7.com/) är ett särskilt kraftfullt verktyg som användes extensivt i detta projekt för att säkerställa att koden följer industristandarder:
+
+- **Best Practices**: Kontrollerade ASP.NET Core och Blazor best practices genom att läsa officiell dokumentation
+- **API-design**: Hjälpte med att designa RESTful API:er enligt Microsofts rekommendationer
+- **Säkerhet**: Förslag på säkerhetsförbättringar som path validation, input validation och korrekt felhantering
+- **Arkitektur**: Vägledning kring projektstruktur och design patterns
+- **Logging**: Rekommendationer för strukturerad loggning med Serilog
+
+### 📋 Specifika exempel på AI-assistans
+
+#### 1. **Status & Logs-sidan**
+AI hjälpte till att:
+- Designa backend-endpoints (`/status/logs` och `/status/health`) enligt REST-principer
+- Implementera säker filhantering med path validation för att förhindra directory traversal-attacker
+- Skapa frontend-tjänst (`StatusService`) med korrekt felhantering och konfigurationshantering
+- Designa Blazor-komponenten med användarvänlig UI och loading states
+
+#### 2. **Best Practices Implementation**
+Via Context7 MCP verifierades och implementerades:
+- ✅ Korrekt användning av `ILogger` istället för `Console.WriteLine`
+- ✅ Konfigurationsbaserade API-URLs istället för hardkodade värden
+- ✅ Input validation för att förhindra DoS-attacker
+- ✅ Korrekt HTTP status codes (503 för unhealthy health checks)
+- ✅ Strukturerad felhantering med specifika exception types
+
+#### 3. **Kodstruktur och organisation**
+AI hjälpte till att:
+- Organisera projektet i logiska mappar (Services, Models, Extensions)
+- Skapa reusable services med dependency injection
+- Designa konsekvent API-struktur
+- Skapa omfattande dokumentation i README
+
+
 ## 📖 Vad är detta projekt?
 
 Detta är ett webbaserat kortspel där spelaren gissar om nästa kort kommer att ha ett högre eller lägre värde än det nuvarande kortet. Projektet är byggt med moderna .NET-tekniker och består av tre huvuddelar:
@@ -530,5 +598,3 @@ Projektet använder:
 - [Serilog](https://serilog.net/) - Strukturerad loggning
 
 ---
-
-**Glöm inte**: Om du fastnar, ta det lugnt! Utveckling handlar om att lära sig, och alla börjar någonstans. Använd dokumentationen, Google och fråga om hjälp när du behöver det. Lycka till! 🚀
