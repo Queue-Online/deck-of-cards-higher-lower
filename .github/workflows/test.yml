@@ -1,4 +1,6 @@
-name: Build Backend API
+name: Run Tests
+permissions:
+  contents: read
 
 on:
   push:
@@ -6,16 +8,17 @@ on:
     paths:
       - 'deck-of-cards-api/**'
       - 'deck-of-cards-test/**'
-      - '.github/workflows/build-backend.yml'
+      - '.github/workflows/test.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'deck-of-cards-api/**'
       - 'deck-of-cards-test/**'
-      - '.github/workflows/build-backend.yml'
+      - '.github/workflows/test.yml'
+  workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     
     steps:
@@ -29,11 +32,19 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore if-tester.sln
       
-    - name: Build
+    - name: Build API
       run: dotnet build deck-of-cards-api/deck-of-cards-api.csproj --no-restore --configuration Release
       
     - name: Build tests
       run: dotnet build deck-of-cards-test/deck-of-cards-test.csproj --no-restore --configuration Release
       
-    - name: Run tests
-      run: dotnet test deck-of-cards-test/deck-of-cards-test.csproj --no-build --configuration Release --verbosity normal
+    - name: Run unit and integration tests
+      run: dotnet test deck-of-cards-test/deck-of-cards-test.csproj --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      if: always()
+      with:
+        files: '**/coverage.cobertura.xml'
+        fail_ci_if_error: false
+
