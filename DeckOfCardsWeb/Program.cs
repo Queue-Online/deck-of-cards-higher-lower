@@ -11,6 +11,9 @@ builder.Services.AddRazorComponents()
 // Add HttpClient and CardService
 builder.Services.AddHttpClient<CardService>();
 
+// Add HttpClient and StatusService
+builder.Services.AddHttpClient<StatusService>();
+
 // Add Feature Toggle Service
 builder.Services.AddSingleton<FeatureToggleService>();
 

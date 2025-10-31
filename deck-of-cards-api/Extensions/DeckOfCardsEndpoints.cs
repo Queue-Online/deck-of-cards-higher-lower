@@ -1,5 +1,6 @@
 using test_api.Models;
 using test_api.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace test_api.Extensions;
 
@@ -48,6 +49,24 @@ public static class DeckOfCardsEndpoints
             .Produces<Deck>(200)
             .Produces(400)
             .Produces(404)
+            .Produces(500);
+
+        // Get logs
+        app.MapGet("/status/logs", GetLogs)
+            .WithName("GetLogs")
+            .WithSummary("Get application logs")
+            .WithDescription("Retrieve recent application logs")
+            .WithOpenApi()
+            .Produces<string[]>(200)
+            .Produces(500);
+
+        // Get health status
+        app.MapGet("/status/health", GetHealthStatus)
+            .WithName("GetHealthStatus")
+            .WithSummary("Get health status")
+            .WithDescription("Retrieve current health status of the API")
+            .WithOpenApi()
+            .Produces(200)
             .Produces(500);
 
         return app;
@@ -135,5 +154,68 @@ public static class DeckOfCardsEndpoints
         }
 
         return Results.Ok(deck);
+    }
+
+    private static async Task<IResult> GetLogs(IWebHostEnvironment env, int limit = 100)
+    {
+        try
+        {
+            var logsDirectory = Path.Combine(env.ContentRootPath, "logs");
+            if (!Directory.Exists(logsDirectory))
+            {
+                return Results.Ok(new { logs = Array.Empty<string>(), message = "Logs directory not found" });
+            }
+
+            var logFiles = Directory.GetFiles(logsDirectory, "log-*.txt")
+                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
+                .Take(1)
+                .ToList();
+
+            if (logFiles.Count == 0)
+            {
+                return Results.Ok(new { logs = Array.Empty<string>(), message = "No log files found" });
+            }
+
+            var latestLogFile = logFiles[0];
+            var logLines = await File.ReadAllLinesAsync(latestLogFile);
+            var recentLogs = logLines
+                .TakeLast(limit)
+                .ToArray();
+
+            return Results.Ok(new { logs = recentLogs, file = Path.GetFileName(latestLogFile) });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to read logs: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetHealthStatus(HealthCheckService healthCheckService)
+    {
+        try
+        {
+            var healthReport = await healthCheckService.CheckHealthAsync();
+            
+            var status = new
+            {
+                status = healthReport.Status.ToString(),
+                totalDuration = healthReport.TotalDuration.TotalMilliseconds,
+                timestamp = DateTime.UtcNow,
+                entries = healthReport.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.TotalMilliseconds,
+                    data = e.Value.Data
+                })
+            };
+
+            return Results.Ok(status);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to get health status: {ex.Message}");
+        }
     }
 }
