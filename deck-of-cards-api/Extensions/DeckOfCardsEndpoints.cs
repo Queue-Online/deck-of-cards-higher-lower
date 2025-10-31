@@ -227,7 +227,14 @@ public static class DeckOfCardsEndpoints
         }
     }
 
-    private static async Task<IResult> GetHealthStatus(HealthCheckService healthCheckService, ILogger<Program> logger)
+    /// <summary>
+    /// Gets the detailed health status of the API.
+    /// HealthCheckService is automatically registered when AddHealthChecks() is called in Program.cs
+    /// and is provided by Microsoft.Extensions.Diagnostics.HealthChecks namespace.
+    /// </summary>
+    private static async Task<IResult> GetHealthStatus(
+        Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService healthCheckService, 
+        ILogger<Program> logger)
     {
         try
         {
