@@ -1,6 +1,7 @@
 using test_api.Models;
 using test_api.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.IO;
 
 namespace test_api.Extensions;
 
